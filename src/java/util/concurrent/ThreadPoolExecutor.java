@@ -693,7 +693,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * the thread actually starts running tasks, we initialize lock
      * state to a negative value, and clear it upon start (in
      * runWorker).
-     * Woker主要维护着运行任务的线程的中断控制信息，以及其他小记录。这个类拓展AbstractQueuedSynchronizer
+     * Woker主要维护着运行task的worker的中断控制信息，以及其他小记录。这个类拓展AbstractQueuedSynchronizer
      * 而来简化获取和释放每一个任务执行中的锁。这可以防止中断那些打算唤醒正在等待其他线程任务的任务，而不是
      * 中断正在运行的任务。我们实现一个简单的不可重入锁而不是ReentrantLo，因为我们不想当其调用setCorePoolSize
      * 这样的方法的时候能获得锁。
@@ -713,7 +713,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         //正在跑的线程，如果是null标识factory失败
         final Thread thread;
         /** Initial task to run.  Possibly null. */
-        //初始化一个任务
+        //初始化一个任务以运行
         Runnable firstTask;
         /** Per-thread task counter */
         //每个线程计数
@@ -1250,7 +1250,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     /**
      * Main worker run loop.  Repeatedly gets tasks from queue and
      * executes them, while coping with a number of issues:
-     *
+     * 主要的Worker运行的循环。重复得获取从任务队列中取出task并执行它。
      * 1. We may start out with an initial task, in which case we
      * don't need to get the first one. Otherwise, as long as pool is
      * running, we get tasks from getTask. If it returns null then the
@@ -1292,7 +1292,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      */
     final void runWorker(Worker w) {
         Thread wt = Thread.currentThread();
-        //取出firstTask，再将其设置为null
+        //取出firstTask，再将worker中的值-设置为null
         Runnable task = w.firstTask;
         w.firstTask = null;
         w.unlock(); // allow interrupts
@@ -1523,16 +1523,15 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
          * workerCount, and so prevents false alarms that would add
          * threads when it shouldn't, by returning false.
          * 1.如果少于corePoolSize的线程在运行，那么试着启动一个新线程，其中用给定指令作为first task。
-         * 这会调用addWorker去原子性得检查runState和workerCoune，所以能防止错误警报，并且哪怕失败也能创建
-         * 一个新的线程
+         * 这会调用addWorker去原子性得检查runState和workerCoune，因此可以防止错误报警，在错误报警不应该时通过返回false来添加线程
          * 2. If a task can be successfully queued, then we still need
          * to double-check whether we should have added a thread
          * (because existing ones died since last checking) or that
          * the pool shut down since entry into this method. So we
          * recheck state and if necessary roll back the enqueuing if
          * stopped, or start a new thread if there are none.
-         * 2.如果任务被成功排队，我们任然应该第二次检查是否添加一个新线程（因为可能存在的一个在最后一次检查后挂掉）
-         * 或者在进入这个方法期间线程池shutdown。所以我们再次检查状态，如果已关闭和有必要则退出队列。
+         * 2.如果任务被成功排队，我们任然应该第二次检查是否添加一个新线程（因为可能存在在最后一次检查后挂掉的情况）
+         * 或者在进入这个方法期间线程池shutdown。所以我们再次检查状态，如果已关闭和有必要则退出队列，或者如果没有的话就开始一个新的线程。
          * 3. If we cannot queue task, then we try to add a new
          * thread.  If it fails, we know we are shut down or saturated
          * and so reject the task.
